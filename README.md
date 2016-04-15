@@ -27,7 +27,6 @@ Table of Contents
     * [upstream_show](#upstream_show)
 * [Consul_interface](#consul_interface)
 * [Etcd_interface](#etcd_interface)
-* [Check_module](#check_module_support)
 * [TODO](#todo)
 * [Compatibility](#compatibility)
 * [Installation](#installation)
@@ -66,8 +65,6 @@ stream {
         proxy_connect_timeout 1s;
         proxy_timeout 3s;
         proxy_pass test;
-
-        upstream_show;
     }
 
     server {
@@ -76,8 +73,6 @@ stream {
         proxy_responses 1;
         proxy_timeout 20s;
         proxy_pass bar;
-
-        upstream_show;
     }
 }
 ```
@@ -103,8 +98,6 @@ stream {
         proxy_connect_timeout 1s;
         proxy_timeout 3s;
         proxy_pass test;
-
-        upstream_show;
     }
 
     server {
@@ -113,8 +106,6 @@ stream {
         proxy_responses 1;
         proxy_timeout 20s;
         proxy_pass bar;
-
-        upstream_show;
     }
 }
 ```
@@ -142,8 +133,6 @@ stream {
         proxy_connect_timeout 1s;
         proxy_timeout 3s;
         proxy_pass test;
-
-        upstream_show;
     }
 
     server {
@@ -152,11 +141,11 @@ stream {
         proxy_responses 1;
         proxy_timeout 20s;
         proxy_pass bar;
-
-        upstream_show;
     }
 }
 ```
+
+[Back to TOC](#table-of-contents)       
 
 Description
 ======
@@ -175,9 +164,7 @@ This module provides a method to discover backend servers. Supporting dynamicly 
 
       Even if one pulling failed, it will pull next upsync_interval, so guaranteing backend server stably provides service. And support dumping the latest config to location, so even if consul hung up, and nginx can be reload anytime. 
 
-* health_check
-
-      nginx-stream-upsync-module support adding or deleting servers health check, needing nginx_upstream_check_module. Recommending nginx-stream-upsync-module + nginx_upstream_check_module.
+[Back to TOC](#table-of-contents)       
 
 Diretives
 ======
@@ -211,7 +198,6 @@ The parameters' meanings are:
 
     when nginx start up if depending on consul, and consul is not working, nginx will boot failed, otherwise booting normally.
 
-[Back to TOC](#table-of-contents)       
 
 upsync_dump_path
 -----------
@@ -223,7 +209,6 @@ context: upstream
 
 description: dump the upstream backends to the $path.
 
-[Back to TOC](#table-of-contents)       
 
 upsync_lb
 -----------
@@ -234,34 +219,6 @@ default: round_robin/ip_hash/hash modula
 context: upstream
 
 description: mainly for least_conn and hash consistent, when using one of them, you must point out using upsync_lb.
-
-[Back to TOC](#table-of-contents)       
-
-upstream_show
------------
-`syntax: upstream_show`
-
-default: none
-
-context: upstream
-
-description: Show specific upstream all backend servers.
-
-```configure
-     location /upstream_list {
-         upstream_show;
-     }
-```
-
-```request1
-curl http://127.0.0.1:8500/upstream_list?test;
-```
-
-```request2
-curl http://127.0.0.1:8500/upstream_list;
-
-show all upstreams.
-```
 
 [Back to TOC](#table-of-contents)       
 
@@ -351,57 +308,10 @@ mainly like consul, http_interface example:
 
 [Back to TOC](#table-of-contents)       
 
-Check_module
-======
-
-check module support.
-
-check-conf:
-```check-conf
-stream {
-    upstream test {
-        # fake server otherwise ngx_stream_upstream will report error when startup
-        server 127.0.0.1:11111;
-
-        # all backend server will pull from consul when startup and will delete fake server
-        upsync 127.0.0.1:8500/v1/kv/upstreams/test upsync_timeout=6m upsync_interval=500ms upsync_type=consul strong_dependency=off;
-        upsync_dump_path /usr/local/nginx/conf/servers/servers_test.conf;
-
-        check interval=1000 rise=2 fall=2 timeout=3000 type=tcp default_down=false;
-    }
-
-    upstream bar {
-        server 127.0.0.1:8090 weight=1, fail_timeout=10, max_fails=3;
-    }
-
-    server {
-        listen 12345;
-
-        proxy_connect_timeout 1s;
-        proxy_timeout 3s;
-        proxy_pass test;
-
-        upstream_show;
-    }
-
-    server {
-        listen 127.0.0.1:9091;
-
-        proxy_responses 1;
-        proxy_timeout 20s;
-        proxy_pass bar;
-
-        upstream_show;
-    }
-}
-```
-
-[Back to TOC](#table-of-contents)       
-
 TODO
 ====
 
-* support nginx-1.9.x
+* support to show upstreams
 
 * support zookeeper and so on
 
