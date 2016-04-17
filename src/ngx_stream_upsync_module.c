@@ -238,9 +238,9 @@ static ngx_int_t ngx_stream_client_send(ngx_stream_conf_client *client,
 static ngx_int_t ngx_stream_client_recv(ngx_stream_conf_client *client, 
     char **data, int size);
 
-//static char *ngx_stream_upsync_set(ngx_conf_t *cf, ngx_command_t *cmd, 
-//    void *conf);
-//static ngx_int_t ngx_stream_upsync_show(ngx_stream_session_t *r);
+static char *ngx_stream_upsync_set(ngx_conf_t *cf, ngx_command_t *cmd, 
+    void *conf);
+static void ngx_stream_upsync_show(ngx_stream_session_t *r);
 
 
 static http_parser_settings settings = {
@@ -284,14 +284,14 @@ static ngx_command_t  ngx_stream_upsync_commands[] = {
         NGX_STREAM_SRV_CONF_OFFSET,
         0,
         NULL },
-/*
+
     {  ngx_string("upstream_show"),
         NGX_STREAM_SRV_CONF|NGX_CONF_NOARGS,
         ngx_stream_upsync_set,
         0,
         0,
         NULL },
-*/
+
     ngx_null_command
 };
 
@@ -3494,16 +3494,71 @@ ngx_stream_client_recv(ngx_stream_conf_client *client, char **data, int size)
     return recv_num;
 }
 
-/*
+
 static char *
 ngx_stream_upsync_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    ngx_stream_core_srv_conf_t *clcf;
+    ngx_stream_core_srv_conf_t *cscf;
 
-    clcf = ngx_stream_conf_get_module_srv_conf(cf, ngx_stream_core_module);
-    clcf->handler = ngx_stream_upsync_show;
+    cscf = ngx_stream_conf_get_module_srv_conf(cf, ngx_stream_core_module);
+    cscf->handler = ngx_stream_upsync_show;
 
     return NGX_CONF_OK;
+}
+
+
+static void
+ngx_stream_upsync_show_send(ngx_stream_session_t *s, ngx_buf_t *b)
+{
+    u_char                  *data;
+    ssize_t                  temp_send = 0, send_num = 0, len;
+    ngx_connection_t        *c;
+
+    c = s->connection;
+    data = b->pos;
+    len = b->last - b->start;
+
+    ngx_log_debug0(NGX_LOG_DEBUG, c->log, 0, "upstream_show_send");
+
+    while (send_num < len) {
+
+        temp_send = c->send(c, data + temp_send, len - send_num);
+
+#if (NGX_DEBUG)
+        {
+        ngx_err_t  err;
+
+        err = (temp_send >=0) ? 0 : ngx_socket_errno;
+        ngx_log_debug2(NGX_LOG_DEBUG, c->log, err,
+                       "upsync show send size: %z, total: %z",
+                       temp_send, len);
+
+        if (temp_send > 0) {
+            ngx_log_debug2(NGX_LOG_DEBUG, c->log, err,
+                           "upsync show send content: %*s ", temp_send, data);
+        }
+        }
+#endif
+
+        if (temp_send > 0) {
+            send_num += temp_send;
+
+        } else if (temp_send == 0 || temp_send == NGX_AGAIN) {
+            continue;
+
+        } else {
+            c->error = 1;
+            break;
+        }
+    }
+
+    if (send_num == len) {
+        ngx_log_debug0(NGX_LOG_DEBUG, c->log, 0, "upsync_show_send done.");
+    }
+
+    ngx_stream_close_connection(c);
+
+    return;
 }
 
 
@@ -3520,6 +3575,17 @@ ngx_stream_upsync_show_upstream(ngx_stream_upstream_srv_conf_t *uscf, ngx_buf_t 
         peers = (ngx_stream_upstream_rr_peers_t *) uscf->peer.data;
     }
 
+    //HTTP Header
+    b->last = ngx_snprintf(b->last, b->end - b->last,
+                           "HTTP/1.1 200 OK\n");
+    b->last = ngx_snprintf(b->last, b->end - b->last,
+                           "Server: nginx\n");
+    b->last = ngx_snprintf(b->last, b->end - b->last,
+                           "Content-Type: text/plain\n");
+    b->last = ngx_snprintf(b->last, b->end - b->last,
+                           "Connection: close\n\n");
+
+    //HTTP Body
     b->last = ngx_snprintf(b->last, b->end - b->last,
                            "Upstream name: %V; ", host);
     b->last = ngx_snprintf(b->last, b->end - b->last,
@@ -3544,90 +3610,39 @@ ngx_stream_upsync_show_upstream(ngx_stream_upstream_srv_conf_t *uscf, ngx_buf_t 
 }
 
 
-static ngx_int_t
-ngx_stream_upsync_show(ngx_stream_session_t *r)
+static void
+ngx_stream_upsync_show(ngx_stream_session_t *s)
 {
     ngx_buf_t                             *b;
-    ngx_int_t                              rc, ret;
-    ngx_str_t                             *host;
     ngx_uint_t                             i;
-    ngx_chain_t                            out;
     ngx_stream_upstream_srv_conf_t       **uscfp = NULL;
     ngx_stream_upstream_main_conf_t       *umcf;
 
     umcf = ngx_stream_cycle_get_module_main_conf(ngx_cycle, 
-                                               ngx_stream_upstream_module);
+                                                 ngx_stream_upstream_module);
 
     uscfp = umcf->upstreams.elts;
 
-    if (r->method != NGX_STREAM_GET && r->method != NGX_STREAM_HEAD) {
-        return NGX_STREAM_NOT_ALLOWED;
-    }
-
-    rc = ngx_stream_discard_request_body(r);
-    if (rc != NGX_OK) {
-        return rc; 
-    }
-
-    ngx_str_set(&r->headers_out.content_type, "text/plain");
-    if (r->method == NGX_STREAM_HEAD) {
-        r->headers_out.status = NGX_STREAM_OK;
-
-        rc = ngx_stream_send_header(r);
-        if (rc == NGX_ERROR || rc > NGX_OK || r->header_only) {
-            return rc;
-        }
-    }
-
-    b = ngx_create_temp_buf(r->pool, NGX_PAGE_SIZE * NGX_PAGE_NUMBER);
+    b = ngx_create_temp_buf(s->connection->pool, 
+                            NGX_PAGE_SIZE * NGX_PAGE_NUMBER);
     if (b == NULL) {
-        return NGX_STREAM_INTERNAL_SERVER_ERROR;
-    }
-    out.buf = b;
-    out.next = NULL;
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, 
+                      "alloc upsync_show buf failed");
 
-    host = &r->args;
-    if (host->len == 0 || host->data == NULL) {
-
-        if (umcf->upstreams.nelts == 0) {
-            b->last = ngx_snprintf(b->last, b->end - b->last,
-                                   "No upstreams defined");
-
-            goto end;
-        }
-    	
-    	for (i = 0; i < umcf->upstreams.nelts; i++) {
-            ngx_stream_upsync_show_upstream(uscfp[i], b);
-            b->last = ngx_snprintf(b->last, b->end - b->last, "\n");
-        }
-    	
-        goto end;
+        ngx_stream_close_connection(s->connection);
+        return;
     }
 
+    if (umcf->upstreams.nelts == 0) {
+        b->last = ngx_snprintf(b->last, b->end - b->last,
+                               "No upstreams defined\n");
+    }
+    	
     for (i = 0; i < umcf->upstreams.nelts; i++) {
-
-        if (uscfp[i]->host.len == host->len
-            && ngx_strncasecmp(uscfp[i]->host.data, host->data, host->len) == 0) 
-        {
-            ngx_stream_upsync_show_upstream(uscfp[i], b);
-            goto end;
-        }
+        ngx_stream_upsync_show_upstream(uscfp[i], b);
     }
-
-    b->last = ngx_snprintf(b->last, b->end - b->last, 
-                           "The upstream you requested does not exist. "
-                           "Please double-check the name");    
-
-end:
-    r->headers_out.status = NGX_STREAM_OK;
-    r->headers_out.content_length_n = b->last - b->pos;
-
-    b->last_buf = (r == r->main) ? 1 : 0;
-
-    r->connection->buffered |= NGX_STREAM_WRITE_BUFFERED;
-    ret = ngx_stream_send_header(r);
-    ret = ngx_stream_output_filter(r, &out);
  
-    return ret;
+    ngx_stream_upsync_show_send(s, b);
+
+    return;
 }
-*/
