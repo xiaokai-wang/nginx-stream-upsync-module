@@ -3516,7 +3516,7 @@ ngx_stream_upsync_show_send(ngx_stream_session_t *s, ngx_buf_t *b)
 
     c = s->connection;
     data = b->pos;
-    len = b->last - b->start;
+    len = b->last - b->pos;
 
     ngx_log_debug0(NGX_LOG_DEBUG, c->log, 0, "upstream_show_send");
 
@@ -3556,8 +3556,6 @@ ngx_stream_upsync_show_send(ngx_stream_session_t *s, ngx_buf_t *b)
         ngx_log_debug0(NGX_LOG_DEBUG, c->log, 0, "upsync_show_send done.");
     }
 
-    ngx_stream_close_connection(c);
-
     return;
 }
 
@@ -3574,16 +3572,6 @@ ngx_stream_upsync_show_upstream(ngx_stream_upstream_srv_conf_t *uscf, ngx_buf_t 
     if (uscf->peer.data != NULL) {
         peers = (ngx_stream_upstream_rr_peers_t *) uscf->peer.data;
     }
-
-    //HTTP Header
-    b->last = ngx_snprintf(b->last, b->end - b->last,
-                           "HTTP/1.1 200 OK\n");
-    b->last = ngx_snprintf(b->last, b->end - b->last,
-                           "Server: nginx\n");
-    b->last = ngx_snprintf(b->last, b->end - b->last,
-                           "Content-Type: text/plain\n");
-    b->last = ngx_snprintf(b->last, b->end - b->last,
-                           "Connection: close\n\n");
 
     //HTTP Body
     b->last = ngx_snprintf(b->last, b->end - b->last,
@@ -3633,6 +3621,19 @@ ngx_stream_upsync_show(ngx_stream_session_t *s)
         return;
     }
 
+    //HTTP Header
+    b->last = ngx_snprintf(b->last, b->end - b->last,
+                           "HTTP/1.0 200 OK\r\n");
+    b->last = ngx_snprintf(b->last, b->end - b->last,
+                           "Server: nginx\r\n");
+    b->last = ngx_snprintf(b->last, b->end - b->last,
+                           "Content-Type: text/plain\r\n");
+    b->last = ngx_snprintf(b->last, b->end - b->last,
+                           "Connection: close\r\n\r\n");
+
+    ngx_stream_upsync_show_send(s, b); //send header
+
+    b->pos = b->last;
     if (umcf->upstreams.nelts == 0) {
         b->last = ngx_snprintf(b->last, b->end - b->last,
                                "No upstreams defined\n");
@@ -3640,9 +3641,12 @@ ngx_stream_upsync_show(ngx_stream_session_t *s)
     	
     for (i = 0; i < umcf->upstreams.nelts; i++) {
         ngx_stream_upsync_show_upstream(uscfp[i], b);
+        b->last = ngx_snprintf(b->last, b->end - b->last, "\n");
     }
  
-    ngx_stream_upsync_show_send(s, b);
+    ngx_stream_upsync_show_send(s, b); //send body
+
+    ngx_stream_close_connection(s->connection);
 
     return;
 }

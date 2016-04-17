@@ -68,6 +68,12 @@ stream {
     }
 
     server {
+        listen 2345;
+
+        upstream_show
+    }
+
+    server {
         listen 127.0.0.1:9091;
 
         proxy_responses 1;
@@ -98,6 +104,12 @@ stream {
         proxy_connect_timeout 1s;
         proxy_timeout 3s;
         proxy_pass test;
+    }
+
+    server {
+        listen 2345;
+
+        upstream_show
     }
 
     server {
@@ -133,6 +145,12 @@ stream {
         proxy_connect_timeout 1s;
         proxy_timeout 3s;
         proxy_pass test;
+    }
+
+    server {
+        listen 2345;
+
+        upstream_show
     }
 
     server {
@@ -219,6 +237,23 @@ default: round_robin/ip_hash/hash modula
 context: upstream
 
 description: mainly for least_conn and hash consistent, when using one of them, you must point out using upsync_lb.
+
+
+upsync_show
+-----------
+`syntax: upsync_show`
+
+default: none
+
+context: server
+
+description: show all upstreams.
+
+```request
+curl http://localhost:2345/upstream_show
+
+show all upstreams
+```
 
 [Back to TOC](#table-of-contents)       
 
