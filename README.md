@@ -355,9 +355,9 @@ TODO
 Compatibility
 =============
 
-The module was developed base on nginx1.8.0.
+The module was developed base on nginx-1.9.10.
 
-Compatible with Nginx-1.8.x.
+Compatible with Nginx-1.9.x.
 
 [Back to TOC](#table-of-contents)
 
