@@ -357,7 +357,7 @@ Compatibility
 
 The module was developed base on nginx-1.9.10.
 
-Compatible with Nginx-1.9.x.
+Compatible with Nginx-1.9.10+.
 
 [Back to TOC](#table-of-contents)
 
