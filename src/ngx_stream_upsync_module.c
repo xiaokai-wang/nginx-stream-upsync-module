@@ -2095,9 +2095,6 @@ ngx_stream_upsync_init_peers(ngx_cycle_t *cycle,
 
             peers->peer[i].server = peers->peer[i].name;
 
-#if (NGX_STREAM_UPSTREAM_CHECK) 
-            peer[i].check_index = tmp_peer[i].check_index;
-#endif
             *peerp = &peer[i];
             peerp = &peer[i].next;
         }
