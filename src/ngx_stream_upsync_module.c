@@ -1878,7 +1878,12 @@ ngx_stream_upsync_init_module(ngx_cycle_t *cycle)
     ngx_uint_t                         i;
     ngx_stream_upsync_server_t        *upsync_server;
     ngx_stream_upsync_srv_conf_t      *upscf;
-
+    
+    // no stream {} block found
+    if (upsync_ctx == NULL) {
+        return NGX_OK;
+    }
+    
     upsync_server = upsync_ctx->upsync_server;
 
     if (ngx_stream_upsync_init_shm_mutex(cycle) != NGX_OK) {
@@ -1988,6 +1993,10 @@ ngx_stream_upsync_init_process(ngx_cycle_t *cycle)
     ngx_stream_upsync_ctx_t             *ctx;
     ngx_stream_upsync_server_t          *upsync_server;
 
+    // no stream {} block found
+    if (upsync_ctx == NULL) {
+        return NGX_OK;
+    }
     upsync_server = upsync_ctx->upsync_server;
 
     for (i = 0; i < upsync_ctx->upstream_num; i++) {
