@@ -254,8 +254,8 @@ static http_parser_settings settings = {
     .on_message_complete = 0
 };
 
-ngx_atomic_t   upsync_shared_created0;
-ngx_atomic_t  *upsync_shared_created = &upsync_shared_created0;
+ngx_atomic_t   stream_upsync_shared_created0;
+ngx_atomic_t  *stream_upsync_shared_created = &stream_upsync_shared_created0;
 
 static http_parser *parser = NULL;
 static ngx_stream_http_state state;
@@ -1878,7 +1878,12 @@ ngx_stream_upsync_init_module(ngx_cycle_t *cycle)
     ngx_uint_t                         i;
     ngx_stream_upsync_server_t        *upsync_server;
     ngx_stream_upsync_srv_conf_t      *upscf;
-
+    
+    // no stream {} block found
+    if (upsync_ctx == NULL) {
+        return NGX_OK;
+    }
+    
     upsync_server = upsync_ctx->upsync_server;
 
     if (ngx_stream_upsync_init_shm_mutex(cycle) != NGX_OK) {
@@ -1913,10 +1918,10 @@ ngx_stream_upsync_init_shm_mutex(ngx_cycle_t *cycle)
 
     upsync_server = upsync_ctx->upsync_server;
 
-    if (*upsync_shared_created) {
-        shm.size = 128 * (*upsync_shared_created);
+    if (*stream_upsync_shared_created) {
+        shm.size = 128 * (*stream_upsync_shared_created);
         shm.log = cycle->log;
-        shm.addr = (u_char *)(upsync_shared_created);
+        shm.addr = (u_char *)(stream_upsync_shared_created);
         shm.name.len = sizeof("ngx_upsync_shared_zone");
         shm.name.data = (u_char *)"ngx_upsync_shared_zone";
 
@@ -1942,7 +1947,7 @@ ngx_stream_upsync_init_shm_mutex(ngx_cycle_t *cycle)
     }
     shared = shm.addr;
 
-    upsync_shared_created = (ngx_atomic_t *)shared;
+    stream_upsync_shared_created = (ngx_atomic_t *)shared;
 
     for (i = 0; i < upsync_ctx->upstream_num; i++) {
 
@@ -1970,7 +1975,7 @@ ngx_stream_upsync_init_shm_mutex(ngx_cycle_t *cycle)
         }
     }
 
-    ngx_atomic_cmp_set(upsync_shared_created, *upsync_shared_created, 
+    ngx_atomic_cmp_set(stream_upsync_shared_created, *stream_upsync_shared_created, 
                        upsync_ctx->upstream_num);
 
     return NGX_OK;
@@ -1988,6 +1993,10 @@ ngx_stream_upsync_init_process(ngx_cycle_t *cycle)
     ngx_stream_upsync_ctx_t             *ctx;
     ngx_stream_upsync_server_t          *upsync_server;
 
+    // no stream {} block found
+    if (upsync_ctx == NULL) {
+        return NGX_OK;
+    }
     upsync_server = upsync_ctx->upsync_server;
 
     for (i = 0; i < upsync_ctx->upstream_num; i++) {
