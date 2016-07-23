@@ -346,8 +346,6 @@ mainly like consul, http_interface example:
 TODO
 ====
 
-* support to show upstreams
-
 * support zookeeper and so on
 
 [Back to TOC](#table-of-contents)
