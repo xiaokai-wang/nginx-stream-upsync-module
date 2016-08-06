@@ -1137,7 +1137,7 @@ ngx_stream_upsync_consul_parse_json(void *data)
     cJSON *root = cJSON_Parse((char *)buf->pos);
     if (root == NULL) {
         ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
-                      "upsync_parse_json: root error");
+                      "consul_upsync_parse_json: root error");
         return NGX_ERROR;
     }
 
@@ -1145,7 +1145,7 @@ ngx_stream_upsync_consul_parse_json(void *data)
                        sizeof(*upstream_conf)) != NGX_OK)
     {
         ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
-                      "upsync_parse_json: array init error");
+                      "consul_upsync_parse_json: array init error");
         cJSON_Delete(root);
         return NGX_ERROR;
     }
@@ -1159,8 +1159,9 @@ ngx_stream_upsync_consul_parse_json(void *data)
             p = (u_char *)ngx_strrchr(temp1->valuestring, '/');
             if (p == NULL) {
                 ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
-                              "upsync_parse_json: %s key format is illegal, "
-                              "contains no slash ('/')", temp1->valuestring);
+                              "consul_upsync_parse_json: %s key format is "
+                              "illegal, contains no slash ('/')", 
+                              temp1->valuestring);
                 continue;
             } else if (ngx_stream_upsync_check_key(p) != NGX_OK) {
                 continue;
@@ -1206,7 +1207,7 @@ ngx_stream_upsync_consul_parse_json(void *data)
             cJSON *sub_root = cJSON_Parse((char *)p);
             if (sub_root == NULL) {
                 ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
-                              "upsync_parse_json: parse \'%s\' failed", p);
+                              "consul_upsync_parse_json: parse \'%s\' failed", p);
                 continue;
             }
 
@@ -1283,38 +1284,38 @@ ngx_stream_upsync_consul_parse_json(void *data)
 
         if (upstream_conf->weight <= 0) {
             ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
-                          "upsync_parse_json: \"weight\" value is invalid"
-                          ", setting default value 1");
+                          "consul_upsync_parse_json: \"weight\" value is "
+                          "invalid, setting default value 1");
             upstream_conf->weight = 1;
         }
 
         if (max_fails < 0) {
             ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
-                          "upsync_parse_json: \"max_fails\" value is invalid"
-                          ", setting default value 2");
+                          "consul_upsync_parse_json: \"max_fails\" value is "
+                          "invalid, setting default value 2");
         } else {
             upstream_conf->max_fails = (ngx_uint_t)max_fails;
         }
 
         if (upstream_conf->fail_timeout < 0) {
             ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
-                          "upsync_parse_json: \"fail_timeout\" value is invalid"
-                          ", setting default value 10");
+                          "consul_upsync_parse_json: \"fail_timeout\" value is "
+                          "invalid, setting default value 10");
             upstream_conf->fail_timeout = 10;
         }
 
         if (down != 1 && down != 0) {
             ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
-                          "upsync_parse_json: \"down\" value is invalid"
-                          ", setting default value 0");
+                          "consul_upsync_parse_json: \"down\" value is invalid,"
+                          "setting default value 0");
         } else {
             upstream_conf->down = (ngx_uint_t)down;
         }
 
         if (backup != 1 && backup != 0) {
             ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
-                          "upsync_parse_json: \"backup\" value is invalid"
-                          ", setting default value 0");
+                          "upsync_parse_json: \"backup\" value is invalid,"
+                          "setting default value 0");
         } else {
             upstream_conf->backup = (ngx_uint_t)backup;
         }
@@ -1345,7 +1346,7 @@ ngx_stream_upsync_etcd_parse_json(void *data)
     cJSON *root = cJSON_Parse((char *)buf->pos);
     if (root == NULL) {
         ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
-                      "upsync_parse_json: root error");
+                      "etcd_upsync_parse_json: root error");
         return NGX_ERROR;
     }
     
@@ -1379,7 +1380,7 @@ ngx_stream_upsync_etcd_parse_json(void *data)
                        sizeof(*upstream_conf)) != NGX_OK)
     {
         ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
-                      "upsync_parse_json: array init error");
+                      "etcd_upsync_parse_json: array init error");
         cJSON_Delete(root);
         return NGX_ERROR;
     }
@@ -1393,7 +1394,7 @@ ngx_stream_upsync_etcd_parse_json(void *data)
     cJSON *nodes = cJSON_GetObjectItem(node, "nodes");
     if (nodes == NULL) {
         ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
-                      "upsync_parse_json: nodes is null, no servers");
+                      "etcd_upsync_parse_json: nodes is null, no servers");
         cJSON_Delete(root);
         return NGX_ERROR;
     }
@@ -1407,7 +1408,7 @@ ngx_stream_upsync_etcd_parse_json(void *data)
             p = (u_char *)ngx_strrchr(temp0->valuestring, '/');
             if (p == NULL) {
                 ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
-                              "upsync_parse_json: %s key format is illegal, "
+                              "etcd_upsync_parse_json: %s key format is illegal,"
                               "contains no slash ('/')", temp0->valuestring);
                 continue;
             } else if (ngx_stream_upsync_check_key(p) != NGX_OK) {
@@ -1434,7 +1435,7 @@ ngx_stream_upsync_etcd_parse_json(void *data)
             cJSON *sub_attribute = cJSON_Parse((char *)temp0->valuestring);
             if (sub_attribute == NULL) {
                 ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
-                              "upsync_parse_json: \'%s\' is invalid",
+                              "etcd_upsync_parse_json: \'%s\' is invalid",
                               temp0->valuestring);
                 continue;
             }
@@ -1511,29 +1512,29 @@ ngx_stream_upsync_etcd_parse_json(void *data)
 
         if (upstream_conf->weight <= 0) {
             ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
-                          "upsync_parse_json: \"weight\" value is invalid"
-                          ", setting default value 1");
+                          "etcd_upsync_parse_json: \"weight\" value is invalid,"
+                          " setting default value 1");
             upstream_conf->weight = 1;
         }
 
         if (max_fails < 0) {
             ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
-                          "upsync_parse_json: \"max_fails\" value is invalid"
-                          ", setting default value 2");
+                          "etcd_upsync_parse_json: \"max_fails\" value is invalid,"
+                          " setting default value 2");
         } else {
             upstream_conf->max_fails = (ngx_uint_t)max_fails;
         }
 
         if (upstream_conf->fail_timeout < 0) {
             ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
-                          "upsync_parse_json: \"fail_timeout\" value is invalid"
-                          ", setting default value 10");
+                          "etcd_upsync_parse_json: \"fail_timeout\" value is "
+                          "invalid, setting default value 10");
             upstream_conf->fail_timeout = 10;
         }
 
         if (down != 1 && down != 0) {
             ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
-                          "upsync_parse_json: \"down\" value is invalid"
+                          "etcd_upsync_parse_json: \"down\" value is invalid"
                           ", setting default value 0");
         } else {
             upstream_conf->down = (ngx_uint_t)down;
@@ -1541,7 +1542,7 @@ ngx_stream_upsync_etcd_parse_json(void *data)
 
         if (backup != 1 && backup != 0) {
             ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
-                          "upsync_parse_json: \"backup\" value is invalid"
+                          "etcd_upsync_parse_json: \"backup\" value is invalid"
                           ", setting default value 0");
         } else {
             upstream_conf->backup = (ngx_uint_t)backup;
@@ -2490,7 +2491,7 @@ ngx_stream_upsync_send_handler(ngx_event_t *event)
         ngx_sprintf(request, "GET %V?recurse&index=%d HTTP/1.0\r\nHost: %V\r\n"
                     "Accept: */*\r\n\r\n", 
                     &upscf->upsync_send, upsync_server->index, 
-                    &upscf->conf_server.name);
+                    &upscf->upsync_host);
     }
 
     if (upsync_type_conf->upsync_type == NGX_STREAM_UPSYNC_ETCD) {
@@ -2498,12 +2499,12 @@ ngx_stream_upsync_send_handler(ngx_event_t *event)
             ngx_sprintf(request, "GET %V?wait=true&recursive=true&waitIndex=%d"
                         " HTTP/1.0\r\nHost: %V\r\nAccept: */*\r\n\r\n", 
                         &upscf->upsync_send, upsync_server->index, 
-                        &upscf->conf_server.name);
+                        &upscf->upsync_host);
 
         } else {
             ngx_sprintf(request, "GET %V?" 
                         " HTTP/1.0\r\nHost: %V\r\nAccept: */*\r\n\r\n", 
-                        &upscf->upsync_send, &upscf->conf_server.name);
+                        &upscf->upsync_send, &upscf->upsync_host);
 
         }
     }
