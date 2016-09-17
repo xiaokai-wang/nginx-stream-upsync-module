@@ -2077,7 +2077,7 @@ ngx_stream_upsync_init_peers(ngx_cycle_t *cycle,
     ngx_stream_upsync_server_t *upsync_server)
 {
     ngx_uint_t                        i, len;
-    ngx_stream_upstream_rr_peer_t    *peer = NULL, **peerp = NULL, *tmp_peer;
+    ngx_stream_upstream_rr_peer_t    *peer = NULL, *tmp_peer;
     ngx_stream_upstream_rr_peers_t   *peers = NULL;
     ngx_stream_upstream_srv_conf_t   *uscf;
 
@@ -2093,13 +2093,12 @@ ngx_stream_upsync_init_peers(ngx_cycle_t *cycle,
         peers = (ngx_stream_upstream_rr_peers_t *)uscf->peer.data;
     }
 
-    peerp = &peers->peer;
     tmp_peer = peers->peer;
     if (peers) {
 
         for (i = 0; i < peers->number; i++) {
-            peer = ngx_calloc(sizeof(ngx_stream_upstream_rr_peer_t), 
-                              cycle->log);
+            peer = ngx_calloc(sizeof(ngx_stream_upstream_rr_peer_t),
+                                     cycle->log);
             if (peer == NULL) {
                 goto invalid;
             }
@@ -2108,29 +2107,31 @@ ngx_stream_upsync_init_peers(ngx_cycle_t *cycle,
                 goto invalid;
             }
             ngx_memcpy(saddr, tmp_peer[i].sockaddr, len);
-            peer[i].sockaddr = saddr;
+            peer->sockaddr = saddr;
 
-            peer[i].socklen = tmp_peer[i].socklen;
-            peer[i].name.len = tmp_peer[i].name.len;
+            peer->socklen = tmp_peer[i].socklen;
+            peer->name.len = tmp_peer[i].name.len;
 
             if ((namep = ngx_calloc(tmp_peer[i].name.len,
                                     cycle->log)) == NULL) {
                 goto invalid;
             }
             ngx_memcpy(namep, tmp_peer[i].name.data, tmp_peer[i].name.len);
-            peer[i].name.data = namep;
+            peer->name.data = namep;
 
-            peer[i].max_fails = tmp_peer[i].max_fails;
-            peer[i].fail_timeout = tmp_peer[i].fail_timeout;
-            peer[i].down = tmp_peer[i].down;
-            peer[i].weight = tmp_peer[i].weight;
-            peer[i].effective_weight = tmp_peer[i].effective_weight;
-            peer[i].current_weight = tmp_peer[i].current_weight;
+            peer->max_fails = tmp_peer[i].max_fails;
+            peer->fail_timeout = tmp_peer[i].fail_timeout;
+            peer->down = tmp_peer[i].down;
+            peer->weight = tmp_peer[i].weight;
+            peer->effective_weight = tmp_peer[i].effective_weight;
+            peer->current_weight = tmp_peer[i].current_weight;
 
-            peers->peer[i].server = peers->peer[i].name;
+            peer->next = peers->peer;
+            peers->peer = peer;
 
-            *peerp = &peer[i];
-            peerp = &peer[i].next;
+            if(i == 0) {
+                peer->next = NULL;
+            }
         }
 
         if (upsync_server->upscf->upsync_lb == NGX_STREAM_LB_LEAST_CONN) {
