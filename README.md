@@ -56,7 +56,7 @@ stream {
     }
 
     upstream bar {
-        server 127.0.0.1:8090 weight=1, fail_timeout=10, max_fails=3;
+        server 127.0.0.1:8090 weight=1 fail_timeout=10 max_fails=3;
     }
 
     server {
@@ -95,7 +95,7 @@ stream {
     }
 
     upstream bar {
-        server 127.0.0.1:8090 weight=1, fail_timeout=10, max_fails=3;
+        server 127.0.0.1:8090 weight=1 fail_timeout=10 max_fails=3;
     }
 
     server {
@@ -136,7 +136,7 @@ stream {
     }
 
     upstream bar {
-        server 127.0.0.1:8090 weight=1, fail_timeout=10, max_fails=3;
+        server 127.0.0.1:8090 weight=1 fail_timeout=10 max_fails=3;
     }
 
     server {
