@@ -776,9 +776,11 @@ ngx_stream_upsync_add_peers(ngx_cycle_t *cycle,
         return NGX_ERROR;
     }
 
-    if (uscf->peer.data != NULL) {
-        peers = (ngx_stream_upstream_rr_peers_t *)uscf->peer.data;
+    if (uscf->peer.data == NULL) {
+        return NGX_ERROR;
     }
+    
+    peers = (ngx_stream_upstream_rr_peers_t *)uscf->peer.data;
 
     if (peers && servers->nelts >= 1) {
         n = peers->number + servers->nelts;
@@ -883,12 +885,11 @@ ngx_stream_upsync_add_filter(ngx_cycle_t *cycle,
     }
 
     uscf = upsync_server->uscf;
-    if (uscf->peer.data != NULL) {
-        peers = (ngx_stream_upstream_rr_peers_t *)uscf->peer.data;
-
-    } else {
+    if (uscf->peer.data == NULL) {
         return;
     }
+    
+    peers = (ngx_stream_upstream_rr_peers_t *)uscf->peer.data;
 
     len = ctx->upstream_conf.nelts;
     for (i = 0; i < len; i++) {
@@ -939,9 +940,10 @@ ngx_stream_upsync_del_peers(ngx_cycle_t *cycle,
         return NGX_ERROR;
     }
 
-    if (uscf->peer.data != NULL) {
-        peers = (ngx_stream_upstream_rr_peers_t *)uscf->peer.data;
+    if (uscf->peer.data == NULL) {
+        return NGX_ERROR;
     }
+    peers = (ngx_stream_upstream_rr_peers_t *)uscf->peer.data;
 
     if (peers->number <= servers->nelts) {
         ngx_log_error(NGX_LOG_ERR, cycle->log, 0,
@@ -1026,12 +1028,11 @@ ngx_stream_upsync_del_filter(ngx_cycle_t *cycle,
     }
 
     uscf = upsync_server->uscf;
-    if (uscf->peer.data != NULL) {
-        peers = (ngx_stream_upstream_rr_peers_t *)uscf->peer.data;
-
-    } else {
+    if (uscf->peer.data == NULL) {
         return;
     }
+
+    peers = (ngx_stream_upstream_rr_peers_t *)uscf->peer.data;
 
     len = ctx->upstream_conf.nelts;
     for (peer = peers->peer; peer; peer = peer->next) {
@@ -1073,12 +1074,10 @@ ngx_stream_upsync_update_peers(ngx_cycle_t *cycle,
 
     uscf = upsync_server->uscf;
 
-    if (uscf->peer.data != NULL) {
-        peers = (ngx_stream_upstream_rr_peers_t *)uscf->peer.data;
-
-    } else {
+    if (uscf->peer.data == NULL) {
         return NGX_ERROR;
     }
+    peers = (ngx_stream_upstream_rr_peers_t *)uscf->peer.data;
 
     if (peers->number != ctx->upstream_conf.nelts) {
         return NGX_ERROR;
@@ -2086,9 +2085,10 @@ ngx_stream_upsync_init_peers(ngx_cycle_t *cycle,
 
     ngx_queue_init(&upsync_server->delete_ev);
 
-    if (uscf->peer.data != NULL) {
-        peers = (ngx_stream_upstream_rr_peers_t *)uscf->peer.data;
+    if (uscf->peer.data == NULL) {
+        return NGX_OK;
     }
+    peers = (ngx_stream_upstream_rr_peers_t *)uscf->peer.data;
 
     tmp_peer = peers->peer;
     if (peers) {
@@ -3648,16 +3648,21 @@ ngx_stream_upsync_show_upstream(ngx_stream_upstream_srv_conf_t *uscf, ngx_buf_t 
 
     host = &(uscf->host);
 
-    if (uscf->peer.data != NULL) {
-        peers = (ngx_stream_upstream_rr_peers_t *) uscf->peer.data;
-    }
-
     //HTTP Body
     b->last = ngx_snprintf(b->last, b->end - b->last,
                            "Upstream name: %V; ", host);
-    b->last = ngx_snprintf(b->last, b->end - b->last,
-                           "Backend server count: %d\n", peers->number);
 
+    if (uscf->peer.data == NULL) {
+        b->last = ngx_snprintf(b->last, b->end - b->last,
+                               "Backend server count: %d\n", 0);
+        return;
+    } else {
+        peers = (ngx_stream_upstream_rr_peers_t *) uscf->peer.data;
+        b->last = ngx_snprintf(b->last, b->end - b->last,
+                               "Backend server count: %d\n", peers->number);        
+    }
+        
+    
     for (peer = peers->peer; peer; peer = peer->next) {
         b->last = ngx_snprintf(b->last, b->end - b->last, 
                                "        server %V", &peer->name);
