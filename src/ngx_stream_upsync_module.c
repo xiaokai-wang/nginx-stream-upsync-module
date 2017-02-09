@@ -100,7 +100,7 @@ typedef struct {
 typedef struct {
     ngx_str_t                                host;
 
-    ngx_uint_t                               index;
+    uint64_t                                 index;
 
     ngx_event_t                              upsync_ev;
     ngx_event_t                              upsync_timeout_ev;
@@ -699,7 +699,8 @@ static ngx_int_t
 ngx_stream_upsync_check_index(ngx_stream_upsync_server_t *upsync_server)
 {
     char                        *p;
-    ngx_uint_t                   i, index = 0;
+    ngx_uint_t                   i;
+    uint64_t                     index = 0;
     ngx_upsync_conf_t           *upsync_type_conf;
 
     upsync_type_conf = upsync_server->upscf->upsync_type_conf;
@@ -711,8 +712,8 @@ ngx_stream_upsync_check_index(ngx_stream_upsync_server_t *upsync_server)
                            NGX_INDEX_HEARDER_LEN) == 0) {
                 p = ngx_strchr(state.headers[i][1], '\r');
                 *p = '\0';
-                index = ngx_atoi((u_char *)state.headers[i][1], 
-                             (size_t)ngx_strlen((u_char *)state.headers[i][1]));
+                index = strtoull((char *)state.headers[i][1],
+                             (char **)NULL, 10);
                 break;
             }
         }
@@ -735,8 +736,8 @@ ngx_stream_upsync_check_index(ngx_stream_upsync_server_t *upsync_server)
                            NGX_INDEX_ETCD_HEARDER_LEN) == 0) {
                 p = ngx_strchr(state.headers[i][1], '\r');
                 *p = '\0';
-                index = ngx_atoi((u_char *)state.headers[i][1], 
-                             (size_t)ngx_strlen((u_char *)state.headers[i][1]));
+                index = strtoull((char *)state.headers[i][1],
+                             (char **)NULL, 10);
                 break;
             }
         }
@@ -2484,7 +2485,7 @@ ngx_stream_upsync_send_handler(ngx_event_t *event)
     ngx_memzero(request, ngx_pagesize);
 
     if (upsync_type_conf->upsync_type == NGX_STREAM_UPSYNC_CONSUL) {
-        ngx_sprintf(request, "GET %V?recurse&index=%d HTTP/1.0\r\nHost: %V\r\n"
+        ngx_sprintf(request, "GET %V?recurse&index=%uL HTTP/1.0\r\nHost: %V\r\n"
                     "Accept: */*\r\n\r\n", 
                     &upscf->upsync_send, upsync_server->index, 
                     &upscf->upsync_host);
@@ -2492,7 +2493,7 @@ ngx_stream_upsync_send_handler(ngx_event_t *event)
 
     if (upsync_type_conf->upsync_type == NGX_STREAM_UPSYNC_ETCD) {
         if (upsync_server->index != 0) {
-            ngx_sprintf(request, "GET %V?wait=true&recursive=true&waitIndex=%d"
+            ngx_sprintf(request, "GET %V?wait=true&recursive=true&waitIndex=%uL"
                         " HTTP/1.0\r\nHost: %V\r\nAccept: */*\r\n\r\n", 
                         &upscf->upsync_send, upsync_server->index, 
                         &upscf->upsync_host);
@@ -3496,7 +3497,7 @@ ngx_stream_client_send(ngx_stream_conf_client *client,
     ngx_memzero(request, ngx_pagesize);
 
     if (upsync_type_conf->upsync_type == NGX_STREAM_UPSYNC_CONSUL) {
-        ngx_sprintf(request, "GET %V?recurse&index=%d HTTP/1.0\r\nHost: %V\r\n"
+        ngx_sprintf(request, "GET %V?recurse&index=%uL HTTP/1.0\r\nHost: %V\r\n"
                     "Accept: */*\r\n\r\n", 
                     &upscf->upsync_send, upsync_server->index, 
                     &upscf->conf_server.name);
