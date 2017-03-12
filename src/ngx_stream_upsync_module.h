@@ -17,6 +17,8 @@
 #define ngx_fopen(path, mode)           fopen(path, mode)
 #define ngx_fclose(fp)                  fclose(fp)
 
+#define ngx_strtoull(nptr, endptr, base) strtoull((const char *) nptr, \
+                                                  (char **) endptr, (int) base)
 
 #define NGX_INDEX_HEARDER "X-Consul-Index"
 #define NGX_INDEX_HEARDER_LEN 14
