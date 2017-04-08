@@ -2702,6 +2702,11 @@ ngx_stream_upsync_consul_parse_init(void *data)
 
     parsed = http_parser_execute(parser, &settings, buf, ngx_strlen(buf));
     if (parsed != ngx_strlen(buf)) {
+
+        if (parser != NULL) {
+            ngx_free(parser);
+            parser = NULL;
+        }
         ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
                       "upsync_consul_parse_init: parsed body size is wrong");
         return NGX_ERROR;
@@ -2752,6 +2757,11 @@ ngx_stream_upsync_etcd_parse_init(void *data)
 
     parsed = http_parser_execute(parser, &settings, buf, ngx_strlen(buf));
     if (parsed != ngx_strlen(buf)) {
+
+        if (parser != NULL) {
+            ngx_free(parser);
+            parser = NULL;
+        }
         ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
                       "upsync_etcd_parse_init: parsed body size is wrong");
         return NGX_ERROR;
@@ -3387,7 +3397,6 @@ ngx_stream_upsync_get_upstream(ngx_cycle_t *cycle,
     char *response = NULL;
 
     ngx_stream_client_send(client, upsync_server);
-
     if (ngx_stream_client_recv(client, &response, 0) <= 0) {
         ngx_log_error(NGX_LOG_ERR, cycle->log, 0,
                       "upsync_get_upstream: http client recv fail");
@@ -3400,8 +3409,19 @@ ngx_stream_upsync_get_upstream(ngx_cycle_t *cycle,
 
         return NGX_ERROR;
     }
-
     ngx_stream_client_destroy(client);
+
+    if (ngx_stream_http_parser_init() == NGX_ERROR) {
+        return NGX_ERROR;
+    }
+    http_parser_execute(parser, &settings, response, ngx_strlen(response));
+    if (parser != NULL) {
+        ngx_free(parser);
+        parser = NULL;
+    }
+    if (ngx_strncmp(state.status, "OK", 2) != 0) {
+        return NGX_ERROR;
+    }
 
     *conf_value = response;
 
