@@ -299,6 +299,7 @@ static ngx_command_t  ngx_stream_upsync_commands[] = {
 
 
 static ngx_stream_module_t  ngx_stream_upsync_module_ctx = {
+    NULL,                                       /* preconfiguration */
     NULL,                                       /* postconfiguration */
 
     ngx_stream_upsync_create_main_conf,         /* create main configuration */
@@ -712,8 +713,8 @@ ngx_stream_upsync_check_index(ngx_stream_upsync_server_t *upsync_server)
                            NGX_INDEX_HEARDER_LEN) == 0) {
                 p = ngx_strchr(state.headers[i][1], '\r');
                 *p = '\0';
-                index = ngx_strtoull((char *)state.headers[i][1],
-                             (char **)NULL, 10);
+                index = ngx_strtoull((u_char *)state.headers[i][1], 
+                                     (char **)NULL, 10);
                 break;
             }
         }
@@ -736,8 +737,8 @@ ngx_stream_upsync_check_index(ngx_stream_upsync_server_t *upsync_server)
                            NGX_INDEX_ETCD_HEARDER_LEN) == 0) {
                 p = ngx_strchr(state.headers[i][1], '\r');
                 *p = '\0';
-                index = ngx_strtoull((char *)state.headers[i][1],
-                             (char **)NULL, 10);
+                index = ngx_strtoull((u_char *)state.headers[i][1], 
+                                     (char **)NULL, 10);
                 break;
             }
         }
@@ -1154,7 +1155,7 @@ ngx_stream_upsync_consul_parse_json(void *data)
         cJSON *temp1 = cJSON_GetObjectItem(server_next, "Key");
         if (temp1 != NULL && temp1->valuestring != NULL) {
             if (ngx_stream_upsync_check_key((u_char *)temp1->valuestring,
-                                             upsync_server->host) != NGX_OK) {
+                                            upsync_server->host) != NGX_OK) {
                 continue;
             }
 
@@ -1396,7 +1397,7 @@ ngx_stream_upsync_etcd_parse_json(void *data)
         cJSON *temp0 = cJSON_GetObjectItem(server_next, "key");
         if (temp0 != NULL && temp0->valuestring != NULL) {
             if (ngx_stream_upsync_check_key((u_char *)temp0->valuestring,
-                                             upsync_server->host) != NGX_OK) {
+                                            upsync_server->host) != NGX_OK) {
                 continue;
             }
 
@@ -1552,7 +1553,7 @@ ngx_stream_upsync_check_key(u_char *key, ngx_str_t host)
     if (u_p == NULL) {
         ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
                       "upsync_parse_json: %s is illegal, "
-                      "dont contains upstream name %V", key, &host);
+                      "dont contains subkey %V", key, &host);
         return NGX_ERROR;
     }
     if (*(u_p + host.len) != '/' || *(u_p - 1) != '/') {
@@ -2319,7 +2320,7 @@ ngx_stream_upsync_parse_dump_file(ngx_stream_upsync_server_t *upsync_server)
                                        upsync_server) != NGX_OK) {
             ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
                           "upsync_parse_dump_file: "
-                          "upstream add \"%V\" server error",
+                          "upstream \"%V\" add server error",
                           &upsync_server->host);
             return NGX_ERROR;
         }
@@ -2332,7 +2333,7 @@ ngx_stream_upsync_parse_dump_file(ngx_stream_upsync_server_t *upsync_server)
                                        upsync_server) != NGX_OK) {
             ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
                           "upsync_parse_dump_file: "
-                          "upstream del \"%V\" server error",
+                          "upstream \"%V\" del server error",
                           &upsync_server->host);
             return NGX_ERROR;
         }
@@ -3741,7 +3742,7 @@ ngx_stream_upsync_show(ngx_stream_session_t *s)
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, 
                       "alloc upsync_show buf failed");
 
-        ngx_stream_close_connection(s->connection);
+        ngx_stream_finalize_session(s, NGX_OK);
         return;
     }
 
@@ -3770,7 +3771,22 @@ ngx_stream_upsync_show(ngx_stream_session_t *s)
     ngx_stream_upsync_show_send(s, b_header); //send header
     ngx_stream_upsync_show_send(s, b_body); //send body
 
-    ngx_stream_close_connection(s->connection);
+    //HTTP Header
+    b_header->last = ngx_snprintf(b_header->last, b_header->end - b_header->last,
+                                  "HTTP/1.0 200 OK\r\n");
+    b_header->last = ngx_snprintf(b_header->last, b_header->end - b_header->last,
+                                  "Server: nginx\r\n");
+    b_header->last = ngx_snprintf(b_header->last, b_header->end - b_header->last,
+                                  "Content-Type: text/plain\r\n");
+    b_header->last = ngx_snprintf(b_header->last, b_header->end - b_header->last,
+                                  "Content-Length: %d\r\n", b_body->last - b_body->pos);
+    b_header->last = ngx_snprintf(b_header->last, b_header->end - b_header->last,
+                                  "Connection: close\r\n\r\n");
+
+    ngx_stream_upsync_show_send(s, b_header); //send header
+    ngx_stream_upsync_show_send(s, b_body); //send body
+
+    ngx_stream_finalize_session(s, NGX_OK);
 
     return;
 }
