@@ -3725,10 +3725,10 @@ ngx_stream_upsync_show_upstream(ngx_stream_upstream_srv_conf_t *uscf, ngx_buf_t 
 static void
 ngx_stream_upsync_show(ngx_stream_session_t *s)
 {
-    ngx_buf_t                             *b_header, *b_body;
-    ngx_uint_t                             i;
-    ngx_stream_upstream_srv_conf_t       **uscfp = NULL;
-    ngx_stream_upstream_main_conf_t       *umcf;
+    ngx_buf_t                           *b_header, *b_body;
+    ngx_uint_t                           i;
+    ngx_stream_upstream_srv_conf_t     **uscfp = NULL;
+    ngx_stream_upstream_main_conf_t     *umcf;
 
     umcf = ngx_stream_cycle_get_module_main_conf(ngx_cycle, 
                                                  ngx_stream_upstream_module);
@@ -3755,6 +3755,21 @@ ngx_stream_upsync_show(ngx_stream_session_t *s)
         ngx_stream_upsync_show_upstream(uscfp[i], b_body);
         b_body->last = ngx_snprintf(b_body->last, b_body->end - b_body->last, "\n");
     }
+ 
+    //HTTP Header
+    b_header->last = ngx_snprintf(b_header->last, b_header->end - b_header->last,
+                                  "HTTP/1.0 200 OK\r\n");
+    b_header->last = ngx_snprintf(b_header->last, b_header->end - b_header->last,
+                                  "Server: nginx\r\n");
+    b_header->last = ngx_snprintf(b_header->last, b_header->end - b_header->last,
+                                  "Content-Type: text/plain\r\n");
+    b_header->last = ngx_snprintf(b_header->last, b_header->end - b_header->last,
+                                  "Content-Length: %d\r\n", b_body->last - b_body->pos);
+    b_header->last = ngx_snprintf(b_header->last, b_header->end - b_header->last,
+                                  "Connection: close\r\n\r\n");
+
+    ngx_stream_upsync_show_send(s, b_header); //send header
+    ngx_stream_upsync_show_send(s, b_body); //send body
 
     //HTTP Header
     b_header->last = ngx_snprintf(b_header->last, b_header->end - b_header->last,
