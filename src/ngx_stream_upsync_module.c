@@ -2756,8 +2756,8 @@ ngx_stream_upsync_etcd_parse_init(void *data)
 {
     char                                  *buf;
     size_t                                 parsed;
-    ngx_stream_upsync_ctx_t                 *ctx;
-    ngx_stream_upsync_server_t              *upsync_server = data;
+    ngx_stream_upsync_ctx_t               *ctx;
+    ngx_stream_upsync_server_t            *upsync_server = data;
 
     ctx = &upsync_server->ctx;
 
@@ -3756,21 +3756,6 @@ ngx_stream_upsync_show(ngx_stream_session_t *s)
         b_body->last = ngx_snprintf(b_body->last, b_body->end - b_body->last, "\n");
     }
  
-    //HTTP Header
-    b_header->last = ngx_snprintf(b_header->last, b_header->end - b_header->last,
-                                  "HTTP/1.0 200 OK\r\n");
-    b_header->last = ngx_snprintf(b_header->last, b_header->end - b_header->last,
-                                  "Server: nginx\r\n");
-    b_header->last = ngx_snprintf(b_header->last, b_header->end - b_header->last,
-                                  "Content-Type: text/plain\r\n");
-    b_header->last = ngx_snprintf(b_header->last, b_header->end - b_header->last,
-                                  "Content-Length: %d\r\n", b_body->last - b_body->pos);
-    b_header->last = ngx_snprintf(b_header->last, b_header->end - b_header->last,
-                                  "Connection: close\r\n\r\n");
-
-    ngx_stream_upsync_show_send(s, b_header); //send header
-    ngx_stream_upsync_show_send(s, b_body); //send body
-
     //HTTP Header
     b_header->last = ngx_snprintf(b_header->last, b_header->end - b_header->last,
                                   "HTTP/1.0 200 OK\r\n");
