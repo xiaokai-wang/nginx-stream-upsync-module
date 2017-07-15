@@ -191,7 +191,7 @@ Diretives
 upsync
 -----------
 ```
-syntax: upsync $consul/etcd.api.com:$port/v1/kv/upstreams/$upstream_name [upsync_type=consul/etcd] [upsync_interval=second/minutes] [upsync_timeout=second/minutes] [strong_dependency=off/on]
+syntax: upsync $consul/etcd.api.com:$port/v1/kv/upstreams/$upstream_name/ [upsync_type=consul/etcd] [upsync_interval=second/minutes] [upsync_timeout=second/minutes] [strong_dependency=off/on]
 ```
 default: none, if parameters omitted, default parameters are upsync_interval=5s upsync_timeout=6m strong_dependency=off
 
@@ -356,7 +356,9 @@ Compatibility
 
 The module was developed base on nginx-1.9.10.
 
-Compatible with Nginx-1.9.10+.
+Master branch compatible with nginx-1.11.0+.
+
+Nginx-1.10.3- branch compatible with nginx-1.9.10 ~ nginx-1.11.0+.
 
 [Back to TOC](#table-of-contents)
 

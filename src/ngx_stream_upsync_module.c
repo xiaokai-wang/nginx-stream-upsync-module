@@ -2673,10 +2673,8 @@ ngx_stream_upsync_recv_handler(ngx_event_t *event)
 
 upsync_recv_fail:
     ngx_log_error(NGX_LOG_ERR, event->log, 0,
-                  "upsync_recv: recv error with upsync_server: %V, "
-                  "upstream info : %V", 
-                  upsync_server->pc.name,
-                  &upsync_server->upscf->upsync_send);
+                  "upsync_recv: recv error with upstream: \"%V\"", 
+                  &upsync_server->host);
 
     ngx_stream_upsync_clean_event(upsync_server);
 }
