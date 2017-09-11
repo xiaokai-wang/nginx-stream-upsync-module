@@ -48,12 +48,11 @@ nginx-consul:
 ```nginx-consul
 stream {
     upstream test {
-        # fake server otherwise ngx_stream_upstream will report error when startup
-        server 127.0.0.1:11111;
-
         # all backend server will pull from consul when startup and will delete fake server
         upsync 127.0.0.1:8500/v1/kv/upstreams/test/ upsync_timeout=6m upsync_interval=500ms upsync_type=consul strong_dependency=off;
         upsync_dump_path /usr/local/nginx/conf/servers/servers_test.conf;
+
+        include /usr/local/nginx/conf/servers/servers_test.conf;
     }
 
     upstream bar {
@@ -87,12 +86,11 @@ nginx-etcd:
 ```nginx-etcd
 stream {
     upstream test {
-        # fake server otherwise ngx_stream_upstream will report error when startup
-        server 127.0.0.1:11111;
-
         # all backend server will pull from etcd when startup and will delete fake server
         upsync 127.0.0.1:2379/v2/keys/upstreams/test upsync_timeout=6m upsync_interval=500ms upsync_type=etcd strong_dependency=off;
         upsync_dump_path /usr/local/nginx/conf/servers/servers_test.conf;
+
+        include /usr/local/nginx/conf/servers/servers_test.conf;
     }
 
     upstream bar {
@@ -127,13 +125,13 @@ upsync_lb:
 stream {
     upstream test {
         least_conn; //hash $uri consistent;
-        # fake server otherwise ngx_http_upstream will report error when startup
-        server 127.0.0.1:11111;
 
         # all backend server will pull from consul/etcd when startup and will delete fake server
         upsync 127.0.0.1:8500/v1/kv/upstreams/test/ upsync_timeout=6m upsync_interval=500ms upsync_type=consul strong_dependency=off;
         upsync_dump_path /usr/local/nginx/conf/servers/servers_test.conf;
         upsync_lb least_conn; //hash_ketama;
+
+        include /usr/local/nginx/conf/servers/servers_test.conf;
     }
 
     upstream bar {
@@ -163,6 +161,8 @@ stream {
     }
 }
 ```
+
+NOTE: upstream: include command is neccesary, first time the dumped file should include all the servers.
 
 [Back to TOC](#table-of-contents)       
 
@@ -215,7 +215,7 @@ The parameters' meanings are:
 
 * strong_dependency
 
-    when nginx start up if depending on consul/etcd, and consul/etcd is not working, nginx will boot failed, otherwise booting normally.
+    when nginx start up if strong_dependency is on that means servers will be depended on consul/etcd and will pull servers from consul/etcd.
 
 
 upsync_dump_path

@@ -33,6 +33,7 @@
 
 #define NGX_ADD 0
 #define NGX_DEL 1
+#define NGX_ALL 2
 
 #define NGX_PAGE_SIZE 4 * 1024
 #define NGX_PAGE_NUMBER 1024
