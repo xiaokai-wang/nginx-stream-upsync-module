@@ -101,6 +101,7 @@ typedef struct {
     ngx_str_t                                host;
 
     uint64_t                                 index;
+    uint64_t                                 update_generation;
 
     ngx_event_t                              upsync_ev;
     ngx_event_t                              upsync_timeout_ev;
@@ -259,8 +260,6 @@ ngx_atomic_t  *stream_upsync_shared_created = &stream_upsync_shared_created0;
 
 static http_parser *parser = NULL;
 static ngx_stream_http_state state;
-
-static ngx_uint_t update_generation = 0;
 
 static ngx_stream_upsync_main_conf_t  *upsync_ctx = NULL;
 
@@ -657,7 +656,7 @@ ngx_stream_upsync_process(ngx_stream_upsync_server_t *upsync_server)
     ngx_stream_upsync_add_filter((ngx_cycle_t *)ngx_cycle, upsync_server);
     if (ctx->add_upstream.nelts > 0) {
 
-        if (update_generation != 0) {
+        if (upsync_server->update_generation != 0) {
             if (ngx_stream_upsync_add_peers((ngx_cycle_t *)ngx_cycle, 
                         upsync_server) != NGX_OK) {
                 ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
@@ -675,13 +674,13 @@ ngx_stream_upsync_process(ngx_stream_upsync_server_t *upsync_server)
         }
 
         add_flag = 1;
-        update_generation++;
+        upsync_server->update_generation++;
     }
 
     ngx_stream_upsync_del_filter((ngx_cycle_t *)ngx_cycle, upsync_server);
     if (ctx->del_upstream.nelts > 0) {
 
-        if (update_generation != 0) {
+        if (upsync_server->update_generation != 0) {
             if (ngx_stream_upsync_del_peers((ngx_cycle_t *)ngx_cycle, 
                         upsync_server) != NGX_OK) {
                 ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
@@ -699,7 +698,7 @@ ngx_stream_upsync_process(ngx_stream_upsync_server_t *upsync_server)
         }
 
         del_flag = 1;
-        update_generation++;
+        upsync_server->update_generation++;
     }
 
     //update server attributes
@@ -1182,13 +1181,13 @@ ngx_stream_upsync_replace_peers(ngx_cycle_t *cycle,
     }
     peers = (ngx_stream_upstream_rr_peers_t *)uscf->peer.data;
 
-    servers = ngx_stream_upsync_servers(cycle, upsync_server, NGX_ADD);
+    servers = ngx_stream_upsync_servers(cycle, upsync_server, NGX_ALL);
     if (servers == NULL) {
         return NGX_ERROR;
     }
     if (servers->nelts < 1) {
         ngx_log_error(NGX_LOG_ERR, cycle->log, 0,
-                      "upsync_replace_peers: no servers to add \"%V\"", &uscf->host);
+                      "upsync_replace_peers: no servers to replace \"%V\"", &uscf->host);
         return NGX_ERROR;
     }
 
@@ -2040,6 +2039,7 @@ ngx_stream_upsync_init_srv_conf(ngx_conf_t *cf, void *conf, ngx_uint_t num)
     upscf->conf_file->data = NULL;
 
     upsync_server->index = 0;
+    upsync_server->update_generation = 0;
 
     upsync_server->upscf = upscf;
     upsync_server->uscf = uscf;
@@ -2180,10 +2180,10 @@ ngx_stream_upsync_init_process(ngx_cycle_t *cycle)
 
     for (i = 0; i < upsync_ctx->upstream_num; i++) {
 
+        ngx_queue_init(&upsync_server[i].delete_ev);
         if (upsync_server[i].upscf->strong_dependency == 0) {
             continue;
         }
-        ngx_queue_init(&upsync_server[i].delete_ev);
 
         ctx = &upsync_server[i].ctx;
         ngx_memzero(ctx, sizeof(*ctx));
@@ -2538,7 +2538,7 @@ ngx_stream_upsync_recv_handler(ngx_event_t *event)
             ngx_err_t  err;
 
             err = (size >= 0) ? 0 : ngx_socket_errno;
-            ngx_log_debug2(NGX_LOG_DEBUG, c->log, err,
+            ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, err,
                            "upsync_recv: recv size: %z, upsync_server: %V ",
                            size, upsync_server->pc.name);
         }
