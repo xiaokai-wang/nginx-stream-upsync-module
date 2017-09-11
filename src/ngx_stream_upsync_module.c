@@ -2958,7 +2958,8 @@ ngx_stream_upsync_event_init(ngx_stream_upstream_rr_peer_t *peer,
 static void
 ngx_stream_upsync_del_delay_delete(ngx_event_t *event)
 {
-    ngx_uint_t                       i;
+    ngx_msec_t                       t;
+    ngx_uint_t                       i, conn_interval;
     ngx_connection_t                *c;
     ngx_delay_event_t               *delay_event;
     ngx_stream_session_t            *s = NULL;
@@ -2974,7 +2975,8 @@ ngx_stream_upsync_del_delay_delete(ngx_event_t *event)
     peer = delay_event->data;
 
     c = ngx_cycle->connections;
-    for (i = 0; i < ngx_cycle->connection_n; i++) {
+    conn_interval = ngx_cycle->connection_n / 30;
+    for (i = 0; i < ngx_cycle->connection_n; i += conn_interval) {
 
         if (c[i].fd == (ngx_socket_t) -1) {
             continue;
@@ -2987,7 +2989,8 @@ ngx_stream_upsync_del_delay_delete(ngx_event_t *event)
 
         if (s) {
             if (s->upstream->start_sec < delay_event->start_sec) {
-                ngx_add_timer(&delay_event->delay_delete_ev, NGX_DELAY_DELETE);
+                t = ngx_random() % NGX_DELAY_DELETE + NGX_DELAY_DELETE;
+                ngx_add_timer(&delay_event->delay_delete_ev, t);
                 return;
             }
         }
