@@ -48,12 +48,10 @@ nginx-consul:
 ```nginx-consul
 stream {
     upstream test {
-        # fake server otherwise ngx_stream_upstream will report error when startup
-        server 127.0.0.1:11111;
-
-        # all backend server will pull from consul when startup and will delete fake server
-        upsync 127.0.0.1:8500/v1/kv/upstreams/test upsync_timeout=6m upsync_interval=500ms upsync_type=consul strong_dependency=off;
+        upsync 127.0.0.1:8500/v1/kv/upstreams/test/ upsync_timeout=6m upsync_interval=500ms upsync_type=consul strong_dependency=off;
         upsync_dump_path /usr/local/nginx/conf/servers/servers_test.conf;
+
+        include /usr/local/nginx/conf/servers/servers_test.conf;
     }
 
     upstream bar {
@@ -87,12 +85,10 @@ nginx-etcd:
 ```nginx-etcd
 stream {
     upstream test {
-        # fake server otherwise ngx_stream_upstream will report error when startup
-        server 127.0.0.1:11111;
-
-        # all backend server will pull from etcd when startup and will delete fake server
-        upsync 127.0.0.1:8500/v2/keys/upstreams/test upsync_timeout=6m upsync_interval=500ms upsync_type=etcd strong_dependency=off;
+        upsync 127.0.0.1:2379/v2/keys/upstreams/test upsync_timeout=6m upsync_interval=500ms upsync_type=etcd strong_dependency=off;
         upsync_dump_path /usr/local/nginx/conf/servers/servers_test.conf;
+
+        include /usr/local/nginx/conf/servers/servers_test.conf;
     }
 
     upstream bar {
@@ -127,13 +123,12 @@ upsync_lb:
 stream {
     upstream test {
         least_conn; //hash $uri consistent;
-        # fake server otherwise ngx_http_upstream will report error when startup
-        server 127.0.0.1:11111;
 
-        # all backend server will pull from consul/etcf when startup and will delete fake server
-        upsync 127.0.0.1:8500/v1/kv/upstreams/test upsync_timeout=6m upsync_interval=500ms upsync_type=consul strong_dependency=off;
+        upsync 127.0.0.1:8500/v1/kv/upstreams/test/ upsync_timeout=6m upsync_interval=500ms upsync_type=consul strong_dependency=off;
         upsync_dump_path /usr/local/nginx/conf/servers/servers_test.conf;
         upsync_lb least_conn; //hash_ketama;
+
+        include /usr/local/nginx/conf/servers/servers_test.conf;
     }
 
     upstream bar {
@@ -164,24 +159,26 @@ stream {
 }
 ```
 
+NOTE: upstream: include command is neccesary, first time the dumped file should include all the servers.
+
 [Back to TOC](#table-of-contents)       
 
 Description
 ======
 
-This module provides a method to discover backend servers. Supporting dynamicly adding or deleting backend server through consul and dynamicly adjusting backend servers weight, module will timely pull new backend server list from consul/etcd to upsync nginx ip router. Nginx needn't reload. Having some advantages than others:
+This module provides a method to discover backend servers. Supporting dynamicly adding or deleting backend server through consul/etcd and dynamicly adjusting backend servers weight, module will timely pull new backend server list from consul/etcd to upsync nginx ip router. Nginx needn't reload. Having some advantages than others:
 
 * timely
 
-      module send key to consul with index, consul will compare it with its index, if index doesn't change connection will hang five minutes, in the period any operation to the key-value, will feed back rightaway.
+      module send key to consul/etcd with index, consul/etcd will compare it with its index, if index doesn't change connection will hang five minutes, in the period any operation to the key-value, will feed back rightaway.
 
 * performance
 
-      Pulling from consul equal a request to nginx, updating ip router nginx needn't reload, so affecting nginx performance is little.
+      Pulling from consul/etcd equal a request to nginx, updating ip router nginx needn't reload, so affecting nginx performance is little.
 
 * stability
 
-      Even if one pulling failed, it will pull next upsync_interval, so guaranteing backend server stably provides service. And support dumping the latest config to location, so even if consul hung up, and nginx can be reload anytime. 
+      Even if one pulling failed, it will pull next upsync_interval, so guaranteing backend server stably provides service. And support dumping the latest config to location, so even if consul/etcd hung up, and nginx can be reload anytime. 
 
 [Back to TOC](#table-of-contents)       
 
@@ -191,7 +188,7 @@ Diretives
 upsync
 -----------
 ```
-syntax: upsync $consul.api.com:$port/v1/kv/upstreams/$upstream_name [upsync_type=consul] [upsync_interval=second/minutes] [upsync_timeout=second/minutes] [strong_dependency=off/on]
+syntax: upsync $consul/etcd.api.com:$port/v1/kv/upstreams/$upstream_name/ [upsync_type=consul/etcd] [upsync_interval=second/minutes] [upsync_timeout=second/minutes] [strong_dependency=off/on]
 ```
 default: none, if parameters omitted, default parameters are upsync_interval=5s upsync_timeout=6m strong_dependency=off
 
@@ -203,11 +200,11 @@ The parameters' meanings are:
 
 * upsync_interval
 
-    pulling servers from consul interval time.
+    pulling servers from consul/etcd interval time.
 
 * upsync_timeout
 
-    pulling servers from consul request timeout.
+    pulling servers from consul/etcd request timeout.
 
 * upsync_type
 
@@ -215,7 +212,7 @@ The parameters' meanings are:
 
 * strong_dependency
 
-    when nginx start up if depending on consul, and consul is not working, nginx will boot failed, otherwise booting normally.
+    when nginx start up if strong_dependency is on that means servers will be depended on consul/etcd and will pull servers from consul/etcd.
 
 
 upsync_dump_path
@@ -309,11 +306,11 @@ Etcd_interface
 
 you can add or delete backend server through http_interface.
 
-mainly like consul, http_interface example:
+mainly like etcd, http_interface example:
 
 * add
 ```
-    curl -X PUT http://$consul_ip:$port/v2/keys/upstreams/$upstream_name/$backend_ip:$backend_port
+    curl -X PUT http://$etcd_ip:$port/v2/keys/upstreams/$upstream_name/$backend_ip:$backend_port
 ```
     default: weight=1 max_fails=2 fail_timeout=10 down=0 backup=0;
 
@@ -356,7 +353,9 @@ Compatibility
 
 The module was developed base on nginx-1.9.10.
 
-Compatible with Nginx-1.9.10+.
+Master branch compatible with nginx-1.11.0+.
+
+Nginx-1.10.3- branch compatible with nginx-1.9.10 ~ nginx-1.11.0+.
 
 [Back to TOC](#table-of-contents)
 

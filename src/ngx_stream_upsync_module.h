@@ -17,6 +17,8 @@
 #define ngx_fopen(path, mode)           fopen(path, mode)
 #define ngx_fclose(fp)                  fclose(fp)
 
+#define ngx_strtoull(nptr, endptr, base) strtoull((const char *) nptr, \
+                                                  (char **) endptr, (int) base)
 
 #define NGX_INDEX_HEARDER "X-Consul-Index"
 #define NGX_INDEX_HEARDER_LEN 14
@@ -27,10 +29,11 @@
 #define NGX_MAX_HEADERS 20
 #define NGX_MAX_ELEMENT_SIZE 512
 
-#define NGX_DELAY_DELETE 75 * 1000
+#define NGX_DELAY_DELETE 30 * 60 * 1000     //75 * 1000
 
 #define NGX_ADD 0
 #define NGX_DEL 1
+#define NGX_ALL 2
 
 #define NGX_PAGE_SIZE 4 * 1024
 #define NGX_PAGE_NUMBER 1024
