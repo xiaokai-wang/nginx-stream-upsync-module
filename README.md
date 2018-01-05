@@ -1,7 +1,7 @@
 Name
 ====
 
-nginx-stream-upsync-module - Nginx C module, sync upstreams from consul or others, dynamiclly modify backend-servers attribute(weight, max_fails,...), needn't reload nginx.
+nginx-stream-upsync-module - Nginx C module, sync upstreams from consul or others, dynamically modify backend-servers attribute(weight, max_fails,...), needn't reload nginx.
 
 It may not always be convenient to modify configuration files and restart NGINX. For example, if you are experiencing large amounts of traffic and high load, restarting NGINX and reloading the configuration at that point further increases load on the system and can temporarily degrade performance.
 
@@ -16,7 +16,7 @@ Table of Contents
 * [Status](#status)
 * [Synopsis](#synopsis)
 * [Description](#description)
-* [Directives](#functions)
+* [Directives](#directives)
     * [upsync](#upsync)
         * [upsync_interval](#upsync_interval)
         * [upsync_timeout](#upsync_timeout)
@@ -182,7 +182,7 @@ This module provides a method to discover backend servers. Supporting dynamicly 
 
 [Back to TOC](#table-of-contents)       
 
-Diretives
+Directives
 ======
 
 upsync
@@ -258,7 +258,19 @@ show all upstreams
 Consul_interface
 ======
 
-you can add or delete backend server through consul_ui or http_interface.
+Data can be taken from key/value store or service catalog. In the first case parameter upsync_type of directive must be *consul*. For example
+ 
+```nginx-consul
+    upsync 127.0.0.1:8500/v1/kv/upstreams/test upsync_timeout=6m upsync_interval=500ms upsync_type=consul strong_dependency=off;
+```
+
+In the second case it must be *consul_services*.
+
+```nginx-consul
+    upsync 127.0.0.1:8500/v1/catalog/service/test upsync_timeout=6m upsync_interval=500ms upsync_type=consul_services strong_dependency=off;
+```
+
+you can add or delete backend server through consul_ui or http_interface. Below are examples for key/value store.
 
 http_interface example:
 
