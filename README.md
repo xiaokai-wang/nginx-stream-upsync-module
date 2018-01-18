@@ -9,6 +9,8 @@ The module can be more smoothly expansion and constriction, and will not influen
 
 Another module, [nginx-upsync-module](https://github.com/weibocom/nginx-upsync-module) supports nginx http module(HTTP protocol), please be noticed.
 
+If you want to use [nginx-upsync-module](https://github.com/weibocom/nginx-upsync-module) and [nginx-stream-upsync-module](https://github.com/xiaokai-wang/nginx-stream-upsync-module) both, please refer to [nginx-upsync](https://github.com/CallMeFoxie/nginx-upsync).
+
 Table of Contents
 =================
 
