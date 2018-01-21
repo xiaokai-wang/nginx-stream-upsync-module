@@ -1178,7 +1178,7 @@ ngx_stream_upsync_replace_peers(ngx_cycle_t *cycle,
     ngx_uint_t                        i, len, n=0, w=0;
     ngx_array_t                      *servers;
     ngx_stream_upstream_server_t     *server = NULL;
-    ngx_stream_upstream_rr_peer_t    *peer = NULL, *tmp_peer;
+    ngx_stream_upstream_rr_peer_t    *peer = NULL;
     ngx_stream_upstream_rr_peers_t   *peers = NULL;
     ngx_stream_upstream_srv_conf_t   *uscf;
 
@@ -1203,7 +1203,7 @@ ngx_stream_upsync_replace_peers(ngx_cycle_t *cycle,
         return NGX_ERROR;
     }
 
-    tmp_peer = peers->peer;
+    //tmp_peer = peers->peer;
     if (peers && servers->nelts >= 1) {
         n = servers->nelts;
 
