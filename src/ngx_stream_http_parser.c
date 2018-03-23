@@ -21,6 +21,9 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
+#include <ngx_config.h>
+#ifndef NGX_HTTP_UPSYNC
+
 #include "ngx_stream_http_parser.h"
 #include <assert.h>
 #include <stddef.h>
@@ -2416,3 +2419,5 @@ http_parser_version(void) {
          HTTP_PARSER_VERSION_MINOR * 0x00100 |
          HTTP_PARSER_VERSION_PATCH * 0x00001;
 }
+
+#endif

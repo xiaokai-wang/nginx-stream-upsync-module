@@ -23,6 +23,9 @@
 /* cJSON */
 /* JSON parser in C. */
 
+#include <ngx_config.h>
+#ifndef NGX_HTTP_UPSYNC
+
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
@@ -570,3 +573,5 @@ cJSON *cJSON_Duplicate(cJSON *item,int recurse)
 	}
 	return newitem;
 }
+
+#endif
