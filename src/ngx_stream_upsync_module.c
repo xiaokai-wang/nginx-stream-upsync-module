@@ -1650,6 +1650,8 @@ ngx_stream_upsync_etcd_parse_json(void *data)
     if (errorCode != NULL) {
         if (errorCode->valueint == 401) { // trigger reload, we've gone too far with index
             upsync_server->index = 0;
+
+            ngx_del_timer(&upsync_server->upsync_timeout_ev);
             ngx_add_timer(&upsync_server->upsync_ev, 0);
         }
         cJSON_Delete(root);
@@ -1663,7 +1665,10 @@ ngx_stream_upsync_etcd_parse_json(void *data)
 
             if (ngx_memcmp(action->valuestring, "get", 3) != 0) {
                 upsync_server->index = 0;
+
+                ngx_del_timer(&upsync_server->upsync_timeout_ev);
                 ngx_add_timer(&upsync_server->upsync_ev, 0);
+
                 cJSON_Delete(root);
                 return NGX_ERROR;
             }
@@ -2509,6 +2514,10 @@ ngx_stream_upsync_connect_handler(ngx_event_t *event)
         ngx_log_error(NGX_LOG_ERR, event->log, 0,
                       "upsync_connect_handler: cannot connect to upsync_server: %V ",
                       upsync_server->pc.name);
+
+        ngx_del_timer(&upsync_server->upsync_timeout_ev);
+        ngx_add_timer(&upsync_server->upsync_ev, 0);
+
         return;
     }
 
@@ -2969,6 +2978,7 @@ ngx_stream_upsync_dump_server(ngx_stream_upsync_server_t *upsync_server)
 static ngx_int_t
 ngx_stream_upsync_init_server(ngx_event_t *event)
 {
+    ngx_uint_t                               n = 0, r = 0, cur = 0;
     ngx_pool_t                              *pool;
     ngx_stream_upsync_ctx_t                 *ctx;
     ngx_stream_upsync_server_t              *upsync_server;
@@ -3029,9 +3039,24 @@ ngx_stream_upsync_init_server(ngx_event_t *event)
             goto valid;
         }
 
+        /* bad method: for get random server*/
+        for (rp = res; rp != NULL; rp = rp->ai_next) {
+            if (rp->ai_family != AF_INET) {
+                continue;
+            }
+
+            n++;
+        }
+
+        r = ngx_random() % n;
         for (rp = res; rp != NULL; rp = rp->ai_next) {
 
             if (rp->ai_family != AF_INET) {
+                continue;
+            }
+
+            if (cur != r) {
+                cur++;
                 continue;
             }
 
@@ -3051,7 +3076,6 @@ ngx_stream_upsync_init_server(ngx_event_t *event)
             if (p == NULL) {
                 goto valid;
             }
-
             len = ngx_sock_ntop((struct sockaddr *) sin, rp->ai_addrlen, p, len, 1);
 
             name = ngx_pcalloc(ctx->pool, sizeof(*name));
