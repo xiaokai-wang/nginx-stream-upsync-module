@@ -958,14 +958,14 @@ ngx_stream_upsync_diff_filter(ngx_cycle_t *cycle,
                        sizeof(*add_upstream)) != NGX_OK)
     {
         ngx_log_error(NGX_LOG_ERR, cycle->log, 0,
-                      "upsync_diff_filter: alloc error");
+                      "upsync_diff_filter_add: alloc error");
         return;
     }
 
     if (ngx_array_init(&ctx->del_upstream, ctx->pool, 16,
                        sizeof(*del_upstream)) != NGX_OK) {
         ngx_log_error(NGX_LOG_ERR, cycle->log, 0,
-                      "upsync_diff_filter: alloc error");
+                      "upsync_diff_filter_del: alloc error");
         return;
     }
 
@@ -3318,7 +3318,7 @@ ngx_stream_upsync_timeout_handler(ngx_event_t *event)
     upsync_server = event->data;
 
     ngx_log_error(NGX_LOG_ERR, event->log, 0,
-                  "upsync_timeout: timed out reading upsync_server: %V ", 
+                  "[WARN] upsync_timeout: timed out reading upsync_server: %V ",
                   upsync_server->pc.name);
 
     ngx_stream_upsync_clean_event(upsync_server);
@@ -3429,6 +3429,17 @@ ngx_stream_upsync_clear_all_events(ngx_cycle_t *cycle)
                 upsync_server->pc.connection = NULL;
             }
             ngx_del_timer(&upsync_server[i].upsync_timeout_ev);
+        }
+
+        head = &upsync_server[i].delete_ev;
+        for (next = ngx_queue_head(head);
+                next != ngx_queue_sentinel(head);
+                next = ngx_queue_next(next)) {
+
+            queue_event = ngx_queue_data(next, ngx_delay_event_t, delay_delete_ev);
+            if (queue_event->delay_delete_ev.timer_set) {
+                ngx_del_timer(&queue_event->delay_delete_ev);
+            }
         }
     }
 
