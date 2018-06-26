@@ -3398,7 +3398,9 @@ static void
 ngx_stream_upsync_clear_all_events(ngx_cycle_t *cycle)
 {
     ngx_uint_t                          i;
+    ngx_queue_t                        *head, *next;
     ngx_connection_t                   *c;
+    ngx_delay_event_t                  *queue_event;
     ngx_upsync_conf_t                  *upsync_type_conf;
     ngx_stream_upsync_server_t         *upsync_server;
 
