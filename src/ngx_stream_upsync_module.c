@@ -1115,7 +1115,10 @@ ngx_stream_upsync_del_peers(ngx_cycle_t *cycle,
             pre_peer = peer;
         }
     }
-    tmp_del_peer->next = NULL;
+
+    if (tmp_del_peer) {
+        tmp_del_peer->next = NULL;
+    }
 
     peers->single = (n == 1);
     peers->number = n;
