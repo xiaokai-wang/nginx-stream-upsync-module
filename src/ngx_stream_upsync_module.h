@@ -67,6 +67,7 @@ typedef struct {
 
 
 typedef struct {
+    ngx_stream_complex_value_t            key;
     ngx_stream_upstream_chash_points_t   *points;
 } ngx_stream_upstream_hash_srv_conf_t;
 
