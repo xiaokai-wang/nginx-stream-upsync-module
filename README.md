@@ -31,6 +31,7 @@ Table of Contents
 * [Etcd_interface](#etcd_interface)
 * [TODO](#todo)
 * [Compatibility](#compatibility)
+* [Pre-built Packages (Ubuntu / Debian)](#pre-built-packages-ubuntu--debian)
 * [Installation](#installation)
 * [Code style](#code-style)
 * [Author](#author)
@@ -163,7 +164,7 @@ stream {
 
 NOTE: upstream: include command is neccesary, first time the dumped file should include all the servers.
 
-[Back to TOC](#table-of-contents)       
+[Back to TOC](#table-of-contents)
 
 Description
 ======
@@ -180,9 +181,9 @@ This module provides a method to discover backend servers. Supporting dynamicly 
 
 * stability
 
-      Even if one pulling failed, it will pull next upsync_interval, so guaranteing backend server stably provides service. And support dumping the latest config to location, so even if consul/etcd hung up, and nginx can be reload anytime. 
+      Even if one pulling failed, it will pull next upsync_interval, so guaranteing backend server stably provides service. And support dumping the latest config to location, so even if consul/etcd hung up, and nginx can be reload anytime.
 
-[Back to TOC](#table-of-contents)       
+[Back to TOC](#table-of-contents)
 
 Directives
 ======
@@ -255,13 +256,13 @@ curl http://localhost:2345/upstream_show
 show all upstreams
 ```
 
-[Back to TOC](#table-of-contents)       
+[Back to TOC](#table-of-contents)
 
 Consul_interface
 ======
 
 Data can be taken from key/value store or service catalog. In the first case parameter upsync_type of directive must be *consul*. For example
- 
+
 ```nginx-consul
     upsync 127.0.0.1:8500/v1/kv/upstreams/test upsync_timeout=6m upsync_interval=500ms upsync_type=consul strong_dependency=off;
 ```
@@ -313,7 +314,7 @@ or
     curl http://$consul_ip:$port/v1/kv/upstreams/$upstream_name?recurse
 ```
 
-[Back to TOC](#table-of-contents)       
+[Back to TOC](#table-of-contents)
 
 Etcd_interface
 ======
@@ -353,7 +354,7 @@ mainly like etcd, http_interface example:
     curl http://$etcd_ip:$port/v2/keys/upstreams/$upstream_name
 ```
 
-[Back to TOC](#table-of-contents)       
+[Back to TOC](#table-of-contents)
 
 TODO
 ====
@@ -370,6 +371,30 @@ The module was developed base on nginx-1.9.10.
 Master branch compatible with nginx-1.11.0+.
 
 Nginx-1.10.3- branch compatible with nginx-1.9.10 ~ nginx-1.11.0+.
+
+[Back to TOC](#table-of-contents)
+
+Pre-built Packages (Ubuntu / Debian)
+====================================
+
+Pre-built packages for this module are freely available from the GetPageSpeed repository:
+
+```bash
+# Install the repository keyring
+sudo install -d -m 0755 /etc/apt/keyrings
+curl -fsSL https://extras.getpagespeed.com/deb-archive-keyring.gpg \
+  | sudo tee /etc/apt/keyrings/getpagespeed.gpg >/dev/null
+
+# Add the repository (Ubuntu example - replace 'ubuntu' and 'jammy' for your distro)
+echo "deb [signed-by=/etc/apt/keyrings/getpagespeed.gpg] https://extras.getpagespeed.com/ubuntu jammy main" \
+  | sudo tee /etc/apt/sources.list.d/getpagespeed-extras.list
+
+# Install nginx and the module
+sudo apt-get update
+sudo apt-get install nginx nginx-module-stream-upsync
+```
+
+The module is automatically enabled after installation. Supported distributions include Debian 12/13 and Ubuntu 20.04/22.04/24.04 (both amd64 and arm64). See [the complete setup instructions](https://apt-nginx-extras.getpagespeed.com/apt-setup/).
 
 [Back to TOC](#table-of-contents)
 
@@ -450,5 +475,3 @@ source dependency
 * http-parser: https://github.com/nodejs/http-parser
 
 [back to toc](#table-of-contents)
-
-
