@@ -190,7 +190,7 @@ Directives
 upsync
 -----------
 ```
-syntax: upsync $consul/etcd.api.com:$port/v1/kv/upstreams/$upstream_name/ [upsync_type=consul/etcd] [upsync_interval=second/minutes] [upsync_timeout=second/minutes] [strong_dependency=off/on]
+syntax: upsync $consul/etcd.api.com:$port/v1/kv/upstreams/$upstream_name/ [upsync_type=consul/consul_services/consul_health/etcd] [upsync_interval=second/minutes] [upsync_timeout=second/minutes] [strong_dependency=off/on]
 ```
 default: none, if parameters omitted, default parameters are upsync_interval=5s upsync_timeout=6m strong_dependency=off
 
@@ -270,6 +270,12 @@ In the second case it must be *consul_services*.
 
 ```nginx-consul
     upsync 127.0.0.1:8500/v1/catalog/service/test upsync_timeout=6m upsync_interval=500ms upsync_type=consul_services strong_dependency=off;
+```
+
+To use only healthy service instances, query the health endpoint with *consul_health*. Servers whose Consul health checks are not all *passing* are marked down.
+
+```nginx-consul
+    upsync 127.0.0.1:8500/v1/health/service/test upsync_timeout=6m upsync_interval=500ms upsync_type=consul_health strong_dependency=off;
 ```
 
 you can add or delete backend server through consul_ui or http_interface. Below are examples for key/value store.
