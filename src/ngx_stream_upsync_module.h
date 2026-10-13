@@ -48,15 +48,6 @@
 #define NGX_STREAM_LB_HASH_MODULA    8
 #define NGX_STREAM_LB_HASH_KETAMA    16
 
-#if (NGX_STREAM_UPSTREAM_CHECK)
-
-extern ngx_uint_t ngx_stream_upstream_check_add_dynamic_peer(ngx_pool_t *pool,
-    ngx_stream_upstream_srv_conf_t *uscf, ngx_addr_t *peer_addr);
-extern void ngx_stream_upstream_check_delete_dynamic_peer(ngx_str_t *name,
-    ngx_addr_t *peer_addr);
-
-#endif
-
 
 /******************************hash*********************************/
 

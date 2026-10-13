@@ -874,25 +874,6 @@ ngx_stream_upsync_add_peers(ngx_cycle_t *cycle,
             peer->next = peers->peer;
             peers->peer = peer;
 
-#if (NGX_STREAM_UPSTREAM_CHECK)
-            ngx_uint_t index;
-            ngx_addr_t *addrs;
-
-            //TODO: it's a little trick, a issue with upstream_check_module
-            // add/del interface, not rely on addrs of check_peers;
-            addrs = ngx_pcalloc(ngx_cycle->pool, sizeof(ngx_addr_t));
-            if (addrs == NULL) {
-                goto invalid;
-            }
-            addrs->name.data = peer->name.data;
-            addrs->name.len = peer->name.len;
-            addrs->sockaddr = peer->sockaddr;
-            addrs->socklen = peer->socklen;
-
-            index = ngx_stream_upstream_check_add_dynamic_peer(cycle->pool,
-                                                             uscf, addrs);
-            peer->check_index = index;
-#endif
             w += server->weight;
         }
         w += peers->total_weight;
@@ -1099,7 +1080,6 @@ ngx_stream_upsync_del_peers(ngx_cycle_t *cycle,
     if (uscf->peer.data == NULL) {
         return NGX_ERROR;
     }
-
     peers = (ngx_stream_upstream_rr_peers_t *)uscf->peer.data;
 
     if (peers->number <= servers->nelts) {
@@ -1120,11 +1100,6 @@ ngx_stream_upsync_del_peers(ngx_cycle_t *cycle,
             if (ngx_memn2cmp((u_char *) peer->sockaddr, 
                              (u_char *) server->addrs->sockaddr, len, len) == 0) 
             {
-
-#if (NGX_STREAM_UPSTREAM_CHECK)
-                ngx_stream_upstream_check_delete_dynamic_peer(
-                                                    peers->name, server->addrs);
-#endif
                 if (del_peer == NULL) {
                     del_peer = peer;
                     tmp_del_peer = peer;
@@ -1239,9 +1214,6 @@ ngx_stream_upsync_replace_peers(ngx_cycle_t *cycle,
 
             peer->conns = 0;
 
-#if (NGX_STREAM_UPSTREAM_CHECK)
-            peer->check_index = server->addrs->.check_index;
-#endif
             peer->next = peers->peer;
             peers->peer = peer;
 
@@ -1708,6 +1680,9 @@ ngx_stream_upsync_consul_health_parse_json(void *data)
         upstream_conf->backup = 0;
 
         checks = cJSON_GetObjectItem(server_next, "Checks");
+        if (checks == NULL) {
+            continue;
+        }
 
         for (check_next = checks->child; check_next != NULL;
              check_next = check_next->next)
