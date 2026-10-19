@@ -401,7 +401,7 @@ make install
 Health checks
 -------------
 
-This module needs no hooks for health checks. To check the servers of a stream upstream, including the ones this module adds at run time, build nginx with a check module which supports stream upstreams, for example the *stream-check* branch of [nginx_upstream_check_module](https://github.com/gfrankliu/nginx_upstream_check_module/tree/stream-check). It works with stock nginx (no core patch) and marks failing servers down by itself:
+This module needs no hooks for health checks. To check the servers of a stream upstream, including the ones this module adds at run time, build nginx with a check module which supports stream upstreams, for example [gfrankliu/nginx_upstream_check_module](https://github.com/gfrankliu/nginx_upstream_check_module). It works with stock nginx (no core patch) and marks failing servers down by itself:
 
 ```bash
 ./configure --with-stream --add-module=/path/to/nginx_upstream_check_module --add-module=/path/to/nginx-stream-upsync-module
@@ -470,7 +470,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 see also
 ========
-* nginx_upstream_check_module with stream upstream checks (no core patch): https://github.com/gfrankliu/nginx_upstream_check_module/tree/stream-check
+* nginx_upstream_check_module with stream upstream checks (no core patch): https://github.com/gfrankliu/nginx_upstream_check_module
 * the nginx_upstream_check_module (http upstreams only): https://github.com/alibaba/tengine/blob/master/src/http/ngx_http_upstream_check_module.c
 * the nginx_upstream_check_module patch (http upstreams only): https://github.com/yaoweibin/nginx_upstream_check_module
 * or based on https://github.com/xiaokai-wang/nginx_upstream_check_module (http upstreams only)
