@@ -398,12 +398,38 @@ make
 make install
 ```
 
-if you support nginx-upstream-check-module
+Health checks
+-------------
+
+This module needs no hooks for health checks. To check the servers of a stream upstream, including the ones this module adds at run time, build nginx with a check module which supports stream upstreams, for example the *stream-check* branch of [nginx_upstream_check_module](https://github.com/gfrankliu/nginx_upstream_check_module/tree/stream-check). It works with stock nginx (no core patch) and marks failing servers down by itself:
+
 ```bash
-./configure --add-module=/path/to/nginx-upstream-check-module --add-module=/path/to/nginx-stream_upsync-module
+./configure --with-stream --add-module=/path/to/nginx_upstream_check_module --add-module=/path/to/nginx-stream-upsync-module
 make
 make install
 ```
+
+```nginx
+stream {
+    upstream test {
+        upsync 127.0.0.1:8500/v1/kv/upstreams/test/ upsync_timeout=6m upsync_interval=500ms upsync_type=consul strong_dependency=off;
+        upsync_dump_path /usr/local/nginx/conf/servers/servers_test.conf;
+        include /usr/local/nginx/conf/servers/servers_test.conf;
+
+        check interval=3000 rise=2 fall=3 timeout=1000 type=tcp;
+    }
+
+    server {
+        listen 12345;
+        proxy_pass test;
+    }
+}
+```
+
+Notes:
+
+* When this module updates a server from consul/etcd (weight, max_fails, down...), it sets the server's *down* flag from the new values. A server which fails its checks is marked down again within half a second.
+* Built as dynamic modules, load ngx_http_upstream_check_module.so before ngx_stream_upstream_check_module.so. If nginx-upsync-module is built as a dynamic module too, load ngx_http_upsync_module.so before ngx_stream_upsync_module.so, which uses its cJSON.
 
 [Back to TOC](#table-of-contents)
 
@@ -444,9 +470,10 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 see also
 ========
-* the nginx_upstream_check_module: https://github.com/alibaba/tengine/blob/master/src/http/ngx_http_upstream_check_module.c
-* the nginx_upstream_check_module patch: https://github.com/yaoweibin/nginx_upstream_check_module
-* or based on https://github.com/xiaokai-wang/nginx_upstream_check_module
+* nginx_upstream_check_module with stream upstream checks (no core patch): https://github.com/gfrankliu/nginx_upstream_check_module/tree/stream-check
+* the nginx_upstream_check_module (http upstreams only): https://github.com/alibaba/tengine/blob/master/src/http/ngx_http_upstream_check_module.c
+* the nginx_upstream_check_module patch (http upstreams only): https://github.com/yaoweibin/nginx_upstream_check_module
+* or based on https://github.com/xiaokai-wang/nginx_upstream_check_module (http upstreams only)
 
 [back to toc](#table-of-contents)
 
